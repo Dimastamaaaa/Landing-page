@@ -29,6 +29,12 @@ import { initContactForm } from './contact-form.js';
 let activeArtist = MOCK_ARTIST;
 let activeTracks = MOCK_TRACKS;
 
+const BACKEND_HOST = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000'
+  : window.location.origin;
+
+const API_BASE = `${BACKEND_HOST}/api`;
+
 // ─── Cleanup registry ────────────────────────────────────────────────────────
 const cleanups = [];
 
@@ -146,7 +152,7 @@ function initAudio() {
   const backendPlaylist = activeTracks.map(track => {
     let audioUrl = track.audioUrl;
     if (audioUrl && audioUrl.startsWith('/public/uploads')) {
-      audioUrl = `http://localhost:5000${audioUrl}`;
+      audioUrl = `${BACKEND_HOST}${audioUrl}`;
     }
     return {
       ...track,
@@ -452,7 +458,7 @@ async function init() {
 
   // Try fetching artist profile from live backend API server
   try {
-    const res = await fetch('http://localhost:5000/api/bio');
+    const res = await fetch(`${API_BASE}/bio`);
     if (res.ok) {
       activeArtist = await res.json();
       console.log('[DELLATEPE] Profile biografi berhasil dimuat dari API.');
@@ -463,7 +469,7 @@ async function init() {
 
   // Try fetching tracks from live backend API server
   try {
-    const res = await fetch('http://localhost:5000/api/tracks');
+    const res = await fetch(`${API_BASE}/tracks`);
     if (res.ok) {
       const backendTracks = await res.json();
       if (backendTracks.length > 0) {

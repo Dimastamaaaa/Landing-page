@@ -7,7 +7,9 @@
 
 const TOKEN_KEY = 'soundform_admin_token';
 const EMAIL_KEY = 'soundform_admin_email';
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000/api'
+  : '/api';
 
 // ─── Immediate Auth Check ─────────────────────────────────────────────
 const token = localStorage.getItem(TOKEN_KEY);

@@ -4,6 +4,7 @@
   "description": "SOUNDFORM - Musician Landing Page & Backend API Server",
   "type": "module",
   "scripts": {
+    "build": "tsc",
     "start": "npx -y serve .",
     "dev": "npx -y serve .",
     "server:dev": "ts-node-dev --respawn --transpile-only --esm server/server.ts",
