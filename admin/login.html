@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOUNDFORM — Admin Login</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@400;700;900&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="../styles/globals.css">
+  <link rel="stylesheet" href="../styles/admin.css">
+</head>
+<body class="admin-login-body">
+
+  <div class="login-container">
+    <div class="login-header">
+      <h1 class="login-logo">SOUNDFORM</h1>
+      <p class="login-subtitle">Control Center · Administrator</p>
+    </div>
+
+    <form class="login-form" id="login-form" novalidate>
+      <div class="form-group">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" id="email" name="email" class="form-input" required placeholder="admin@soundform.local" autocomplete="email">
+        <span class="error-msg" id="error-email"></span>
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" id="password" name="password" class="form-input" required placeholder="••••••••" autocomplete="current-password">
+        <span class="error-msg" id="error-password"></span>
+      </div>
+
+      <div class="form-alert" id="form-alert" role="alert"></div>
+
+      <button type="submit" id="submit-btn" class="login-btn">
+        ENTER CONTROL PANEL
+      </button>
+    </form>
+    
+    <div class="login-footer">
+      <a href="../index.html" class="back-link">← Back to Public Page</a>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOUNDFORM — Admin Dashboard</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@400;700;900&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="../styles/globals.css">
+  <link rel="stylesheet" href="../styles/admin.css">
+
+  <!-- Run Auth Guard immediately to prevent page flash -->
+  <script type="module" src="js/auth-guard.js"></script>
+</head>
+<body class="admin-dashboard-body">
+
+  <div class="dashboard-container">
+    
+    <!-- ============================================= -->
+    <!-- SIDEBAR                                       -->
+    <!-- ============================================= -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-header">
+        <h2 class="sidebar-logo">SOUNDFORM</h2>
+        <span class="sidebar-badge">Control Center</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-item active" data-target="panel-tracks">
+          <span class="nav-label">Tracks</span>
+        </div>
+        <div class="nav-item" data-target="panel-albums">
+          <span class="nav-label">Albums</span>
+        </div>
+        <div class="nav-item" data-target="panel-bio">
+          <span class="nav-label">Artist Bio</span>
+        </div>
+        <div class="nav-item" data-target="panel-inbox">
+          <span class="nav-label">Inbox</span>
+          <span class="nav-badge" id="inbox-badge-unread">0</span>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="admin-info">
+          Logged in as:<br/>
+          <strong id="admin-email">—</strong>
+        </div>
+        <button id="logout-btn" class="logout-btn">LOGOUT</button>
+      </div>
+    </aside>
+
+    <!-- ============================================= -->
+    <!-- MAIN CONTENT                                  -->
+    <!-- ============================================= -->
+    <main class="dashboard-main">
+      
+      <!-- Title Bar -->
+      <div class="dashboard-title-bar">
+        <h1 class="dashboard-title" id="current-panel-title">Tracks Management</h1>
+        <div class="user-action">
+          <a href="../index.html" class="secondary-btn" target="_blank">View Live Site ↗</a>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Total Tracks</span>
+          <span class="stat-val" id="stat-tracks">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total plays</span>
+          <span class="stat-val" id="stat-plays">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Unread Messages</span>
+          <span class="stat-val" id="stat-unread">0</span>
+        </div>
+      </div>
+
+      <!-- ============================================= -->
+      <!-- TAB PANELS                                    -->
+      <!-- ============================================= -->
+
+      <!-- Panel: Tracks -->
+      <div class="tab-panel active" id="panel-tracks">
+        <div class="list-actions">
+          <button class="primary-btn" id="btn-add-track">+ UPLOAD NEW TRACK</button>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Track Title</th>
+                <th>Album</th>
+                <th>BPM / Key</th>
+                <th>Status</th>
+                <th>Plays</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tracks-table-body">
+              <!-- Dynamic rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Panel: Albums -->
+      <div class="tab-panel" id="panel-albums">
+        <div class="list-actions">
+          <button class="primary-btn" id="btn-add-album">+ CREATE NEW ALBUM</button>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Cover</th>
+                <th>Album Title</th>
+                <th>Release Date</th>
+                <th>Tracks Count</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="albums-table-body">
+              <!-- Dynamic rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Panel: Artist Bio -->
+      <div class="tab-panel" id="panel-bio">
+        <div class="data-table-wrapper" style="padding: 2rem;">
+          <form class="form-grid" id="bio-form">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="bio-name" class="form-label">Artist Name</label>
+                <input type="text" id="bio-name" name="name" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label for="bio-tagline" class="form-label">Tagline</label>
+                <input type="text" id="bio-tagline" name="tagline" class="form-input" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="bio-text" class="form-label">Biography</label>
+              <textarea id="bio-text" name="bio" class="form-input" rows="6" required></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="bio-city" class="form-label">Kota & Daerah</label>
+              <input type="text" id="bio-city" name="city" class="form-input" placeholder="Jakarta, Indonesia">
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="bio-genres" class="form-label">Genres (Comma separated)</label>
+                <input type="text" id="bio-genres" name="genres" class="form-input" placeholder="AMBIENT, GARAGE, SOUL">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Artist Profile Photo</label>
+                <div class="file-upload-box" id="photo-upload-box">
+                  <div class="file-upload-icon">📷</div>
+                  <div class="file-upload-text">Drag profile photo here or click to browse</div>
+                  <div class="file-upload-preview" id="photo-preview-text">No file chosen</div>
+                  <input type="file" id="bio-photo-file" accept="image/jpeg,image/png,image/webp" class="file-upload-input">
+                </div>
+                <!-- Hidden input storing URL -->
+                <input type="hidden" id="bio-photo" name="photoUrl">
+                
+                <!-- Progress bar -->
+                <div class="upload-progress-wrapper" id="photo-progress-wrap">
+                  <div class="upload-progress-bar">
+                    <div class="upload-progress-fill" id="photo-progress-fill"></div>
+                  </div>
+                  <div class="upload-progress-text" id="photo-progress-text">0%</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="bio-instagram" class="form-label">Instagram Link</label>
+                <input type="text" id="bio-instagram" name="instagram" class="form-input">
+              </div>
+              <div class="form-group">
+                <label for="bio-spotify" class="form-label">Spotify Link</label>
+                <input type="text" id="bio-spotify" name="spotify" class="form-input">
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="bio-youtube" class="form-label">YouTube Link</label>
+                <input type="text" id="bio-youtube" name="youtube" class="form-input">
+              </div>
+              <div class="form-group">
+                <label for="bio-tiktok" class="form-label">TikTok Link</label>
+                <input type="text" id="bio-tiktok" name="tiktok" class="form-input">
+              </div>
+            </div>
+
+            <button type="submit" class="primary-btn" style="align-self: flex-start;">SAVE CHANGES</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Panel: Inbox -->
+      <div class="tab-panel" id="panel-inbox">
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Sender</th>
+                <th>Subject</th>
+                <th>Snippet</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="inbox-table-body">
+              <!-- Dynamic rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ============================================= -->
+  <!-- MODAL DRAWERS                                 -->
+  <!-- ============================================= -->
+
+  <!-- Drawer: Track Form -->
+  <div class="modal-overlay" id="modal-track">
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <h3 class="drawer-title" id="track-drawer-title">Add New Track</h3>
+        <span class="drawer-close" id="close-modal-track">&times;</span>
+      </div>
+      <div class="drawer-body">
+        <form class="form-grid" id="track-form" novalidate>
+          <input type="hidden" id="track-id" name="id">
+
+          <div class="form-group">
+            <label for="track-title" class="form-label">Song Title *</label>
+            <input type="text" id="track-title" name="title" class="form-input" required placeholder="Hollow Signal">
+            <span class="error-msg" id="err-track-title"></span>
+          </div>
+
+          <!-- File Upload box for audio -->
+          <div class="form-group">
+            <label class="form-label">Audio File (MP3/WAV) *</label>
+            <div class="file-upload-box" id="audio-upload-box">
+              <div class="file-upload-icon">🎧</div>
+              <div class="file-upload-text">Drag file audio here or click to browse</div>
+              <div class="file-upload-preview" id="audio-preview-text">No file chosen</div>
+              <input type="file" id="track-audio-file" accept="audio/*,video/mp4" class="file-upload-input">
+            </div>
+            <!-- Hidden path value -->
+            <input type="hidden" id="track-audio-url" name="audioUrl" required>
+            <span class="error-msg" id="err-track-audio"></span>
+
+            <!-- Progress bar -->
+            <div class="upload-progress-wrapper" id="audio-progress-wrap">
+              <div class="upload-progress-bar">
+                <div class="upload-progress-fill" id="audio-progress-fill"></div>
+              </div>
+              <div class="upload-progress-text" id="audio-progress-text">0%</div>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="track-bpm" class="form-label">BPM</label>
+              <input type="number" id="track-bpm" name="bpm" class="form-input" placeholder="92">
+            </div>
+            <div class="form-group">
+              <label for="track-key" class="form-label">Key Scale</label>
+              <input type="text" id="track-key" name="key" class="form-input" placeholder="C Minor">
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="track-album" class="form-label">Assign Album</label>
+              <select id="track-album" name="albumId" class="form-input">
+                <option value="">No Album (Single)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="track-mood" class="form-label">Mood / Tags (Comma separated)</label>
+              <input type="text" id="track-mood" name="mood" class="form-input" placeholder="melancholic, ambient">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="track-lyrics" class="form-label">Lyrics</label>
+            <textarea id="track-lyrics" name="lyrics" class="form-input" rows="4" placeholder="Song lyrics..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Publication Status</label>
+            <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="radio" name="isPublished" value="true" checked style="accent-color: var(--color-accent);"> Published
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="radio" name="isPublished" value="false" style="accent-color: var(--color-accent);"> Draft
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="drawer-footer">
+        <button class="secondary-btn" id="btn-cancel-track">Cancel</button>
+        <button class="primary-btn" id="btn-save-track">Save Track</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drawer: Album Form -->
+  <div class="modal-overlay" id="modal-album">
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <h3 class="drawer-title" id="album-drawer-title">Create New Album</h3>
+        <span class="drawer-close" id="close-modal-album">&times;</span>
+      </div>
+      <div class="drawer-body">
+        <form class="form-grid" id="album-form" novalidate>
+          <input type="hidden" id="album-id" name="id">
+
+          <div class="form-group">
+            <label for="album-title" class="form-label">Album Title *</label>
+            <input type="text" id="album-title" name="title" class="form-input" required placeholder="Static Dreams">
+            <span class="error-msg" id="err-album-title"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="album-date" class="form-label">Release Date *</label>
+            <input type="date" id="album-date" name="releaseDate" class="form-input" required>
+            <span class="error-msg" id="err-album-date"></span>
+          </div>
+
+          <!-- Cover Upload box -->
+          <div class="form-group">
+            <label class="form-label">Cover Artwork</label>
+            <div class="file-upload-box" id="cover-upload-box">
+              <div class="file-upload-icon">🖼️</div>
+              <div class="file-upload-text">Drag cover art image here or click to browse</div>
+              <div class="file-upload-preview" id="cover-preview-text">No file chosen</div>
+              <input type="file" id="album-cover-file" accept="image/jpeg,image/png,image/webp" class="file-upload-input">
+            </div>
+            <!-- Hidden path value -->
+            <input type="hidden" id="album-cover-url" name="coverUrl">
+
+            <!-- Progress bar -->
+            <div class="upload-progress-wrapper" id="cover-progress-wrap">
+              <div class="upload-progress-bar">
+                <div class="upload-progress-fill" id="cover-progress-fill"></div>
+              </div>
+              <div class="upload-progress-text" id="cover-progress-text">0%</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="album-description" class="form-label">Description</label>
+            <textarea id="album-description" name="description" class="form-input" rows="4" placeholder="Album concept details..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="drawer-footer">
+        <button class="secondary-btn" id="btn-cancel-album">Cancel</button>
+        <button class="primary-btn" id="btn-save-album">Create Album</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drawer: Inbox Message Detail -->
+  <div class="modal-overlay" id="modal-message">
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <h3 class="drawer-title">Pesan Masuk</h3>
+        <span class="drawer-close" id="close-modal-message">&times;</span>
+      </div>
+      <div class="drawer-body">
+        <div class="message-detail-view">
+          <div class="msg-meta-row">
+            <span class="msg-meta-label">Pengirim</span>
+            <span class="msg-meta-val" id="msg-sender">—</span>
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-meta-label">Email</span>
+            <span class="msg-meta-val" id="msg-email">—</span>
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-meta-label">Subjek</span>
+            <span class="msg-meta-val" id="msg-subject">—</span>
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-meta-label">Tanggal Masuk</span>
+            <span class="msg-meta-val" id="msg-date">—</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Isi Pesan</label>
+            <div class="msg-body-wrapper" id="msg-body">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="drawer-footer">
+        <button class="primary-btn" id="btn-mark-read" style="display: none;">Mark as Read</button>
+        <button class="secondary-btn" id="btn-close-message">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

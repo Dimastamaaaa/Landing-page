@@ -1,0 +1,89 @@
+/* ============================================================
+   SOUNDFORM — Design Tokens
+   ============================================================
+   Central source of truth for every visual decision.
+   Consumed by globals.css and any component-level styles.
+   ============================================================ */
+
+:root {
+  /* --------------------------------------------------------
+     Colors — Warm Underground palette
+     A deliberately constrained palette that evokes vinyl,
+     late-night studios, and analog warmth.
+     -------------------------------------------------------- */
+  --color-bg:           #0C0A07;
+  --color-surface:      #161410;
+  --color-border:       #2A2520;
+  --color-text-hi:      #F0EBE3;
+  --color-text-lo:      #7A736B;
+  --color-accent:       #E8420A;
+  --color-accent-2:     #5C4AE4;
+  --color-player:       #1A1714;
+  --color-accent-glow:  rgba(232, 66, 10, 0.15);
+  --color-accent2-glow: rgba(92, 74, 228, 0.15);
+
+  /* --------------------------------------------------------
+     Type Scale
+     Fluid typography using clamp() — no breakpoint jumps.
+     Hero size intentionally bleeds off-screen.
+     -------------------------------------------------------- */
+  --type-hero:     clamp(8vw, 12vw, 15vw);
+  --type-title:    clamp(3.5rem, 8vw, 9rem);
+  --type-subtitle: clamp(1.5rem, 3vw, 2.5rem);
+  --type-body:     1rem;
+  --type-micro:    0.75rem;
+  --type-quote:    clamp(1.8rem, 4vw, 3rem);
+
+  /* --------------------------------------------------------
+     Spacing
+     Geometric scale — each step roughly doubles.
+     -------------------------------------------------------- */
+  --space-xs:  0.5rem;
+  --space-sm:  1rem;
+  --space-md:  2rem;
+  --space-lg:  4rem;
+  --space-xl:  8rem;
+  --space-2xl: 12rem;
+
+  /* --------------------------------------------------------
+     Easing
+     --ease-snap   : fast-out, satisfying stop
+     --ease-glitch : stepped for glitch effects
+     --ease-smooth : Material-style default
+     -------------------------------------------------------- */
+  --ease-snap:   cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-glitch: steps(4, end);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --------------------------------------------------------
+     Durations
+     -------------------------------------------------------- */
+  --dur-char:   40ms;
+  --dur-glitch: 400ms;
+  --dur-reveal: 800ms;
+  --dur-fade:   300ms;
+
+  /* --------------------------------------------------------
+     Layout
+     -------------------------------------------------------- */
+  --player-height:      90px;
+  --player-height-mini: 64px;
+  --max-width:          1440px;
+}
+
+/* --------------------------------------------------------
+   Light Mode Theme Overrides
+   A premium, warm-cream, editorial alabaster palette
+   -------------------------------------------------------- */
+[data-theme="light"] {
+  --color-bg:           #FAF8F5;
+  --color-surface:      #EFEAE0;
+  --color-border:       #DDD5C7;
+  --color-text-hi:      #1A1612;
+  --color-text-lo:      #8A8072;
+  --color-accent:       #E8420A;
+  --color-accent-2:     #4C3AB2;
+  --color-player:       #ECE7DC;
+  --color-accent-glow:  rgba(232, 66, 10, 0.08);
+  --color-accent2-glow: rgba(76, 58, 178, 0.08);
+}

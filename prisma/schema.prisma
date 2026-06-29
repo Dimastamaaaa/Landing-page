@@ -1,0 +1,68 @@
+// prisma/schema.prisma
+
+datasource db {
+  provider = "postgresql" // Ganti dengan "postgresql" saat menggunakan Supabase di production
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // bcrypt hashed
+  createdAt DateTime @default(now())
+}
+
+model Artist {
+  id          String   @id @default(cuid())
+  name        String
+  tagline     String   // "Lo-fi soul. Garage punk. All yours."
+  bio         String
+  photoUrl    String?
+  city        String?  // Kota & daerah artis, e.g. "Jakarta, Indonesia"
+  genre       String   // Disimpan sebagai serialized JSON string ["AMBIENT", "GARAGE"] untuk kompatibilitas SQLite. (Production: String[])
+  socialLinks String   // Disimpan sebagai serialized JSON string { instagram, spotify, ... } untuk kompatibilitas SQLite. (Production: Json)
+  updatedAt   DateTime @updatedAt
+}
+
+model Album {
+  id          String   @id @default(cuid())
+  title       String
+  coverUrl    String?
+  releaseDate DateTime
+  description String?
+  tracks      Track[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Track {
+  id          String   @id @default(cuid())
+  title       String
+  audioUrl    String   // URL file audio (Supabase storage / local fallback)
+  duration    Int      // dalam detik
+  bpm         Int?
+  key         String?  // e.g. "A Minor"
+  mood        String   // Disimpan sebagai serialized JSON string untuk kompatibilitas SQLite. (Production: String[])
+  lyrics      String?
+  isPublished Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  albumId     String?
+  album       Album?   @relation(fields: [albumId], references: [id])
+  playCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
