@@ -3,6 +3,7 @@ import { Router, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { createClient } from '@supabase/supabase-js';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth.js';
 
 const router = Router();
@@ -10,22 +11,35 @@ const router = Router();
 // Configure local storage fallback
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './public/uploads';
 
-// Ensure upload directory exists
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
+// Initialize Supabase Client if credentials are provided
+const supabaseUrl = process.env.SUPABASE_URL || 'https://hktzmgsmlseznjxprbwi.supabase.co';
+const supabaseKey = process.env.SUPABASE_KEY;
+const isSupabaseEnabled = !!supabaseKey;
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, UPLOAD_DIR);
-  },
-  filename: (req, file, cb) => {
-    // Generate unique name: timestamp-random-extension
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+const supabase = isSupabaseEnabled ? createClient(supabaseUrl, supabaseKey) : null;
+
+// Multer Storage Configuration: Memory for Supabase, Disk for local fallback
+let storage;
+if (isSupabaseEnabled) {
+  storage = multer.memoryStorage();
+  console.log('[UploadRoute] Using Supabase Storage Bucket ("soundform")');
+} else {
+  // Ensure local upload directory exists
+  if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   }
-});
+  storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, UPLOAD_DIR);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+    }
+  });
+  console.log('[UploadRoute] Using Local Disk Storage Fallback');
+}
 
 // File filter based on type (audio/image)
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
@@ -35,12 +49,11 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
 
   const ext = path.extname(file.originalname).toLowerCase();
 
-  // Determine allowed list based on field name or mime type
   const isAudio = file.fieldname === 'audio' || file.mimetype.startsWith('audio/') || file.mimetype.startsWith('video/mp4');
   const isImage = file.fieldname === 'cover' || file.fieldname === 'photo' || file.mimetype.startsWith('image/');
 
   if (isAudio) {
-    cb(null, true); // Accept all audio types
+    cb(null, true);
   } else if (isImage && allowedExtensions.image.includes(ext)) {
     cb(null, true);
   } else {
@@ -52,8 +65,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    // 50MB max limit
-    fileSize: 50 * 1024 * 1024
+    fileSize: 50 * 1024 * 1024 // 50MB max limit
   }
 });
 
@@ -62,7 +74,6 @@ router.post(
   '/',
   authMiddleware,
   (req: AuthenticatedRequest, res: Response, next) => {
-    // Use multer to accept single file from dynamic field names
     upload.any()(req, res, (err) => {
       if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
@@ -85,18 +96,60 @@ router.post(
 
       const file = files[0];
 
-      // Build public URL path (strip local workspace path to serve relatively)
-      // E.g. c:/Landing page/public/uploads/file.mp3 -> /public/uploads/file.mp3
-      const relativePath = `/public/uploads/${file.filename}`;
+      if (isSupabaseEnabled && supabase) {
+        // Upload to Supabase Storage
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const ext = path.extname(file.originalname).toLowerCase();
+        
+        let folder = 'others';
+        if (file.fieldname === 'audio' || file.mimetype.startsWith('audio/') || file.mimetype.startsWith('video/mp4')) {
+          folder = 'audio';
+        } else if (file.fieldname === 'photo' || file.fieldname === 'cover' || file.mimetype.startsWith('image/')) {
+          folder = 'images';
+        }
+        
+        const fileName = `${file.fieldname}-${uniqueSuffix}${ext}`;
+        const filePath = `${folder}/${fileName}`;
 
-      return res.status(200).json({
-        success: true,
-        message: 'File berhasil diunggah.',
-        filename: file.filename,
-        url: relativePath,
-        size: file.size,
-        mimetype: file.mimetype
-      });
+        const { data, error } = await supabase.storage
+          .from('soundform')
+          .upload(filePath, file.buffer, {
+            contentType: file.mimetype,
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) {
+          console.error('Supabase storage upload error:', error);
+          return res.status(500).json({
+            error: 'Upload Error',
+            message: `Gagal mengunggah file ke Supabase Storage: ${error.message}. Pastikan bucket bernama "soundform" dengan akses publik sudah dibuat.`
+          });
+        }
+
+        const { data: urlData } = supabase.storage.from('soundform').getPublicUrl(filePath);
+        const publicUrl = urlData.publicUrl;
+
+        return res.status(200).json({
+          success: true,
+          message: 'File berhasil diunggah ke Supabase Storage.',
+          filename: fileName,
+          url: publicUrl,
+          size: file.size,
+          mimetype: file.mimetype
+        });
+      } else {
+        // Local storage fallback response
+        const relativePath = `/public/uploads/${file.filename}`;
+        return res.status(200).json({
+          success: true,
+          message: 'File berhasil diunggah secara lokal.',
+          filename: file.filename,
+          url: relativePath,
+          size: file.size,
+          mimetype: file.mimetype
+        });
+      }
     } catch (err) {
       console.error('File upload controller error:', err);
       return res.status(500).json({ error: 'Internal Server Error', message: 'Gagal memproses file unggahan.' });
