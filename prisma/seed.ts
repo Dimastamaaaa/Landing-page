@@ -31,9 +31,9 @@ async function main() {
   if (!existingArtist) {
     await prisma.artist.create({
       data: {
-        name: 'RAVEN DARK',
+        name: 'DELLATEPE',
         tagline: 'Lo-fi soul. Garage punk. All yours.',
-        bio: 'Born from the static of late-night radio and the warmth of analog tape, Raven Dark crafts sonic landscapes that blur the line between noise and melody. Based in Jakarta, drawing from the raw energy of garage punk and the intimacy of lo-fi soul, every track is a piece of autobiography encoded in frequency and rhythm. No labels. No compromise. Just sound, stripped to its marrow.',
+        bio: 'Born from the static of late-night radio and the warmth of analog tape, Dellatepe crafts sonic landscapes that blur the line between noise and melody. Based in Jakarta, drawing from the raw energy of garage punk and the intimacy of lo-fi soul, every track is a piece of autobiography encoded in frequency and rhythm. No labels. No compromise. Just sound, stripped to its marrow.',
         photoUrl: '/public/artist_portrait.png',
         genre: JSON.stringify(['AMBIENT', 'GARAGE', 'SOUL', 'LO-FI']),
         socialLinks: JSON.stringify({
@@ -56,7 +56,7 @@ async function main() {
       data: {
         title: 'Static Dreams',
         releaseDate: new Date('2026-06-01'),
-        description: 'Debut EP by Raven Dark, featuring analog tape experiments and lo-fi soundscapes.'
+        description: 'Debut EP by Dellatepe, featuring analog tape experiments and lo-fi soundscapes.'
       }
     });
 

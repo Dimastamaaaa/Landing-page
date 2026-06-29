@@ -73,61 +73,42 @@ export class AudioEngine {
 
   // ─── Playback controls ─────────────────────────────────────────────────
 
-  /**
-   * Play a track by index, or resume the current track if no index given.
-   */
   play(index) {
-    // If an explicit index is given and it's a different track, load it
-    if (index !== undefined && index !== this.currentIndex) {
-      this._loadTrack(index);
-      return; // _loadTrack will call play internally once ready
+    // 1. If explicit index is given (e.g. user clicked a specific track row)
+    if (index !== undefined) {
+      if (index !== this.currentIndex) {
+        // Load and play a new track
+        this._loadTrack(index);
+      } else {
+        // Clicked the same active track: toggle play/pause
+        this.toggle();
+      }
+      return;
     }
 
-    // If same index is requested explicitly (e.g., clicking the same track again)
-    // and we're not currently playing, restart from beginning
-    if (index !== undefined && index === this.currentIndex && !this.isPlaying) {
-      // If we have a howl, just play it
-      if (this._howl) {
-        this._howl.seek(0);
+    // 2. No index given (user clicked the main Play/Pause player bar button)
+    if (this._howl) {
+      if (!this._howl.playing()) {
         this._howl.play();
-        this.isPlaying = true;
-        this._emit('play', this._stateSnapshot());
-        return;
       }
-      // If in simulated mode, restart
-      if (this._simulated) {
-        this._simPausedAt = 0;
-        this._simStartTime = performance.now();
+      this.isPlaying = true;
+      this._emit('play', this._stateSnapshot());
+      return;
+    }
+
+    if (this._simulated) {
+      if (!this.isPlaying) {
+        this._simStartTime = performance.now() - this._simPausedAt * 1000;
         this.isPlaying = true;
         this._runSimulatedProgress();
         this._emit('play', this._stateSnapshot());
-        return;
       }
-      // Otherwise reload the track
-      this._loadTrack(index);
       return;
     }
 
-    // Resume current track (no index given)
-    if (this._howl) {
-      this._howl.play();
-      this.isPlaying = true;
-      this._emit('play', this._stateSnapshot());
-      return;
-    }
-
-    // If nothing loaded yet, start from the beginning
+    // 3. Fallback: if nothing is loaded or current index is -1, start first track
     if (this.currentIndex === -1 && this.playlist.length > 0) {
       this._loadTrack(0);
-      return;
-    }
-
-    // Simulated resume
-    if (this._simulated) {
-      this._simStartTime = performance.now() - this._simPausedAt * 1000;
-      this.isPlaying = true;
-      this._runSimulatedProgress();
-      this._emit('play', this._stateSnapshot());
     }
   }
 
@@ -305,22 +286,25 @@ export class AudioEngine {
     return data;
   }
 
-  /**
-   * Returns the current playback progress.
-   */
   getProgress() {
     const track = this.playlist[this.currentIndex];
     if (!track) return { current: 0, duration: 0, percent: 0, currentFormatted: '0:00', durationFormatted: '0:00' };
 
     let current = 0;
+    let duration = track.duration;
 
     if (this._howl) {
       current = this._howl.seek() || 0;
+      if (this._howl.state() === 'loaded') {
+        const realDur = this._howl.duration();
+        if (realDur && isFinite(realDur) && realDur > 0) {
+          duration = realDur;
+        }
+      }
     } else if (this._simulated) {
       current = this._getSimulatedSeek();
     }
 
-    const duration = track.duration;
     const percent = duration > 0 ? current / duration : 0;
 
     return {
@@ -408,15 +392,14 @@ export class AudioEngine {
 
     // Attempt to create a real Howl instance (if Howl global exists & track has a URL)
     if (typeof Howl !== 'undefined' && track.audioUrl) {
-      let loadFallbackTimer = null;
       try {
-        this._howl = new Howl({
+        const isCrossOrigin = track.audioUrl.startsWith('http');
+        const howlOptions = {
           src: [track.audioUrl],
-          format: ['mp3', 'wav'],
+          format: ['mp3', 'wav', 'flac', 'm4a', 'mp4', 'ogg', 'aac', 'opus'],
           html5: true,
           volume: this.volume,
           onplay: () => {
-            if (loadFallbackTimer) { clearTimeout(loadFallbackTimer); loadFallbackTimer = null; }
             this.isPlaying = true;
             this._setupAnalyser();
             this._emit('play', this._stateSnapshot());
@@ -431,7 +414,6 @@ export class AudioEngine {
             this.next();
           },
           onloaderror: (_id, err) => {
-            if (loadFallbackTimer) { clearTimeout(loadFallbackTimer); loadFallbackTimer = null; }
             // Audio file not found — fall back to simulation
             console.warn(`[AudioEngine] Audio file not found for "${track.title}", using simulated playback.`, err);
             if (this._howl) {
@@ -441,7 +423,6 @@ export class AudioEngine {
             this._startSimulated();
           },
           onplayerror: (_id, err) => {
-            if (loadFallbackTimer) { clearTimeout(loadFallbackTimer); loadFallbackTimer = null; }
             console.warn(`[AudioEngine] Playback error for "${track.title}":`, err);
             // Try to unlock audio context (browser autoplay policy)
             if (this._howl) {
@@ -459,23 +440,16 @@ export class AudioEngine {
               this._startSimulated();
             }
           }
-        });
+        };
 
+        if (isCrossOrigin) {
+          howlOptions.crossOrigin = 'anonymous';
+        }
+
+        this._howl = new Howl(howlOptions);
         this._howl.play();
-
-        // Safety timeout: if nothing happens within 3 seconds, fallback to simulated
-        loadFallbackTimer = setTimeout(() => {
-          if (!this.isPlaying && this._howl && !this._simulated) {
-            console.warn(`[AudioEngine] Timeout waiting for "${track.title}", falling back to simulated playback.`);
-            try { this._howl.unload(); } catch (e) { /* ignore */ }
-            this._howl = null;
-            this._startSimulated();
-          }
-        }, 3000);
-
         return;
       } catch (err) {
-        if (loadFallbackTimer) { clearTimeout(loadFallbackTimer); loadFallbackTimer = null; }
         console.warn('[AudioEngine] Howl creation failed:', err);
       }
     }
@@ -543,7 +517,11 @@ export class AudioEngine {
    */
   _setupAnalyser() {
     try {
-      // Create AudioContext lazily (must happen after user gesture)
+      // Create or reference AudioContext from Howler context
+      if (typeof Howler !== 'undefined' && Howler.ctx) {
+        this._audioCtx = Howler.ctx;
+      }
+      
       if (!this._audioCtx) {
         const AC = window.AudioContext || window.webkitAudioContext;
         if (!AC) return;
@@ -555,32 +533,19 @@ export class AudioEngine {
         this._audioCtx.resume();
       }
 
-      // Get the underlying <audio> element from Howler
-      // Howler exposes the audio node via the internal _sounds array
-      if (!this._howl || !this._howl._sounds || !this._howl._sounds[0]) return;
-      const audioNode = this._howl._sounds[0]._node;
-      if (!audioNode) return;
-
-      // Avoid creating duplicate source nodes for the same element
-      if (this._sourceNode && this._sourceNode.mediaElement === audioNode) return;
-
-      // Disconnect previous source
-      if (this._sourceNode) {
-        try { this._sourceNode.disconnect(); } catch (e) { /* ignore */ }
+      if (!this._analyser) {
+        this._analyser = this._audioCtx.createAnalyser();
+        this._analyser.fftSize = 128;
+        this._analyser.smoothingTimeConstant = 0.8;
+        
+        // Tap Howler's master gain node directly
+        if (typeof Howler !== 'undefined' && Howler.masterGain) {
+          Howler.masterGain.connect(this._analyser);
+        }
+        
+        this._frequencyData = new Uint8Array(this._analyser.frequencyBinCount);
       }
-
-      // Create nodes
-      this._analyser = this._audioCtx.createAnalyser();
-      this._analyser.fftSize = 128;
-      this._analyser.smoothingTimeConstant = 0.8;
-
-      this._sourceNode = this._audioCtx.createMediaElementSource(audioNode);
-      this._sourceNode.connect(this._analyser);
-      this._analyser.connect(this._audioCtx.destination);
-
-      this._frequencyData = new Uint8Array(this._analyser.frequencyBinCount);
     } catch (err) {
-      // Non-fatal — visualisation just won't work with real data
       console.warn('[AudioEngine] Web Audio API setup failed:', err);
     }
   }

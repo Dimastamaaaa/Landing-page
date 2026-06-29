@@ -254,6 +254,9 @@ export function initPlayerUI(engine) {
       if (els.timeCurrent) {
         els.timeCurrent.textContent = progress.currentFormatted;
       }
+      if (els.timeDuration && progress.duration) {
+        els.timeDuration.textContent = progress.durationFormatted;
+      }
       // Update ARIA
       if (els.progressWrap) {
         els.progressWrap.setAttribute('aria-valuenow', Math.round(progress.percent * 100));

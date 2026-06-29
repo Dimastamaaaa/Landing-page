@@ -383,6 +383,23 @@ export function initTracksTab() {
     audioProgressFill.style.width = '0%';
     audioProgressText.textContent = '0%';
 
+    // Detect actual audio duration locally using HTML5 Audio API (avoids CORS issues on remote loaded metadata)
+    try {
+      const audioEl = new Audio();
+      const objectURL = URL.createObjectURL(file);
+      audioEl.preload = 'metadata';
+      audioEl.src = objectURL;
+      audioEl.addEventListener('loadedmetadata', () => {
+        if (audioEl.duration && isFinite(audioEl.duration)) {
+          detectedDuration = Math.round(audioEl.duration);
+          console.log('[TracksTab] Detected local file duration:', detectedDuration);
+        }
+        URL.revokeObjectURL(objectURL);
+      });
+    } catch (durErr) {
+      console.warn('[TracksTab] Local duration detection failed:', durErr);
+    }
+
     // Perform upload via XHR to capture progress events
     const token = localStorage.getItem('soundform_admin_token');
     const xhr = new XMLHttpRequest();
@@ -404,25 +421,15 @@ export function initTracksTab() {
       if (xhr.status === 200) {
         const res = JSON.parse(xhr.responseText);
         audioUrlInput.value = res.url;
-        audioPreviewText.textContent = `Uploaded: ${file.name} ✓`;
-        audioProgressFill.style.background = 'var(--color-accent-2)';
+        
+        // Wait a tiny bit in case metadata event hasn't fired yet
+        setTimeout(() => {
+          const mins = Math.floor(detectedDuration / 60);
+          const secs = detectedDuration % 60;
+          audioPreviewText.textContent = `Uploaded: ${file.name} ✓ (${mins}:${String(secs).padStart(2, '0')})`;
+        }, 100);
 
-        // Detect actual audio duration using HTML5 Audio API
-        try {
-          const audioEl = new Audio();
-          audioEl.preload = 'metadata';
-          audioEl.src = `http://localhost:5000${res.url}`;
-          audioEl.addEventListener('loadedmetadata', () => {
-            if (audioEl.duration && isFinite(audioEl.duration)) {
-              detectedDuration = Math.round(audioEl.duration);
-              const mins = Math.floor(detectedDuration / 60);
-              const secs = detectedDuration % 60;
-              audioPreviewText.textContent = `Uploaded: ${file.name} ✓ (${mins}:${String(secs).padStart(2, '0')})`;
-            }
-          });
-        } catch (durErr) {
-          console.warn('[TracksTab] Could not detect audio duration:', durErr);
-        }
+        audioProgressFill.style.background = 'var(--color-accent-2)';
       } else {
         const err = JSON.parse(xhr.responseText || '{}');
         audioPreviewText.textContent = 'Upload Gagal!';
