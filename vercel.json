@@ -36,6 +36,14 @@
       "dest": "dist/server/server.js"
     },
     {
+      "src": "/admin",
+      "dest": "admin/login.html"
+    },
+    {
+      "src": "/admin/",
+      "dest": "admin/login.html"
+    },
+    {
       "src": "/admin/(.*)",
       "dest": "admin/$1"
     },
